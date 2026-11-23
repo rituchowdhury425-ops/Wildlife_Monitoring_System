@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Detection History | Wildlife Watch</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        .history-page { max-width: 1180px; margin: 0 auto; }
+        .history-intro { margin: 26px 0 30px; }
+        .history-intro h1 { margin: 8px 0 10px; font-family: Georgia, serif; color: #142b22; font-size: clamp(30px, 4vw, 44px); }
+        .history-intro p { color: #667267; max-width: 680px; line-height: 1.7; }
+        .history-summary { display:flex; align-items:center; justify-content:space-between; gap:18px; flex-wrap:wrap; padding:20px 22px; margin-bottom:22px; background:#f8f8f2; border:1px solid #d9dfd5; border-radius:12px; }
+        .history-summary strong { display:block; font-family:Georgia,serif; font-size:27px; color:#142b22; }
+        .history-summary span { color:#718071; font-size:11px; letter-spacing:1.2px; font-weight:700; }
+        .back-link, .page-link { display:inline-flex; align-items:center; justify-content:center; text-decoration:none; border:1px solid #cbd5c9; border-radius:7px; padding:10px 15px; color:#244735; font-size:13px; font-weight:700; }
+        .back-link:hover, .page-link:hover { background:#e8eee5; }
+        .history-list { display:grid; gap:14px; }
+        .history-card { display:flex; align-items:center; gap:18px; padding:17px; background:#f8f8f2; border:1px solid #d9dfd5; border-radius:11px; color:#142b22; }
+        .history-thumb { width:88px; height:88px; flex:0 0 88px; object-fit:cover; border-radius:8px; background:#e9ece5; }
+        .history-details { min-width:0; flex:1; }
+        .history-number { color:#8b956f; font-size:11px; font-weight:700; letter-spacing:.7px; }
+        .history-details h2 { margin:6px 0; font-family:Georgia,serif; font-size:20px; overflow-wrap:anywhere; }
+        .history-details p { margin:4px 0; color:#69766a; font-size:13px; overflow-wrap:anywhere; }
+        .history-confidence { color:#315d46; font-weight:700; }
+        .pagination { display:flex; justify-content:center; align-items:center; flex-wrap:wrap; gap:9px; margin:28px 0 12px; }
+        .pagination .current-page { padding:10px 14px; border-radius:7px; background:#315d46; color:white; font-size:13px; font-weight:700; }
+        .pagination .disabled { opacity:.4; pointer-events:none; }
+        .empty-panel { text-align:center; padding:55px 20px; border:1px dashed #cbd5c9; border-radius:12px; background:#f8f8f2; color:#687568; }
+        .empty-panel h2 { color:#142b22; font-family:Georgia,serif; }
+        @media(max-width:600px) { .history-card{gap:12px;padding:12px}.history-thumb{width:66px;height:66px;flex-basis:66px}.history-details h2{font-size:17px} }
+    </style>
+</head>
+<body>
+<div class="dashboard">
+    <aside class="sidebar">
+        <div class="brand"><div class="brand-mark">W</div><div><h2>WILDLIFE<span>WATCH</span></h2><small>RESEARCH &amp; MONITORING</small></div></div>
+        <div class="nav-label">WORKSPACE</div>
+        <nav class="navigation">
+            <a href="{{ url_for('home') }}#overview" class="nav-link">◈ <span>Overview</span></a>
+            <a href="{{ url_for('home') }}#detection" class="nav-link">◎ <span>Animal Detection</span></a>
+            <a href="{{ url_for('detection_history') }}" class="nav-link active">▤ <span>Detection History</span></a>
+            <a href="{{ url_for('home') }}#gps" class="nav-link">⌖ <span>GPS Monitoring</span></a>
+        </nav>
+        <div class="sidebar-bottom"><div class="status-indicator"></div><div><strong>System online</strong><small>Local Flask environment</small></div></div>
+    </aside>
+
+    <main class="main-content">
+        <div class="topbar">
+            <div><p class="eyebrow">WILDLIFE INTELLIGENCE PLATFORM</p><p class="breadcrumb">Workspace / Detection History</p></div>
+            <div class="topbar-right"><span class="prototype-tag">PROJECT PROTOTYPE</span><div class="profile-mark">WW</div></div>
+        </div>
+
+        <div class="history-page">
+            <section class="history-intro">
+                <p class="eyebrow">02 / COMPLETE ACTIVITY LOG</p>
+                <h1>Detection History</h1>
+                <p>Browse every image detection saved by this project. The newest records appear first, with up to 10 records shown on each page.</p>
+            </section>
+
+            <section class="history-summary">
+                <div><span>TOTAL SAVED DETECTIONS</span><strong>{{ total }}</strong></div>
+                <a class="back-link" href="{{ url_for('home') }}#history">← Back to Dashboard</a>
+            </section>
+
+            {% if history %}
+                <div class="history-list">
+                    {% for record in history %}
+                        <article class="history-card">
+                            <img class="history-thumb" src="{{ url_for('uploaded_file', filename=record['image_filename']) }}" alt="Detected animal image">
+                            <div class="history-details">
+                                <span class="history-number">DETECTION #{{ record['id'] }}</span>
+                                <h2>{{ record['predicted_species'] }}</h2>
+                                <p>Confidence: <span class="history-confidence">{{ "%.2f"|format(record['confidence']) }}%</span></p>
+                                <p>Date: {{ record['detected_at'] }}</p>
+                            </div>
+                        </article>
+                    {% endfor %}
+                </div>
+
+                <nav class="pagination" aria-label="Detection history pages">
+                    {% if current_page > 1 %}
+                        <a class="page-link" href="{{ url_for('detection_history', page=current_page - 1) }}">← Previous</a>
+                    {% else %}
+                        <span class="page-link disabled">← Previous</span>
+                    {% endif %}
+                    <span class="current-page">Page {{ current_page }} of {{ total_pages }}</span>
+                    {% if current_page < total_pages %}
+                        <a class="page-link" href="{{ url_for('detection_history', page=current_page + 1) }}">Next →</a>
+                    {% else %}
+                        <span class="page-link disabled">Next →</span>
+                    {% endif %}
+                </nav>
+            {% else %}
+                <div class="empty-panel">
+                    <h2>No detection records yet</h2>
+                    <p>Upload and analyse a wildlife image. Your saved detections will appear here.</p>
+                    <a class="back-link" href="{{ url_for('home') }}#detection">Go to Animal Detection</a>
+                </div>
+            {% endif %}
+        </div>
+
+        <footer><span>WILDLIFE WATCH</span><span>AI-BASED WILDLIFE MONITORING SYSTEM · FINAL YEAR PROJECT</span></footer>
+    </main>
+</div>
+</body>
+</html>

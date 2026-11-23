@@ -1,0 +1,1105 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wildlife Watch | Monitoring Platform</title>
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='style.css') }}">
+
+    <style>
+        .ai-result {
+            margin-top: 24px;
+            padding: 24px;
+            border: 1px solid #d9dfd5;
+            border-radius: 12px;
+            background: #f8f8f2;
+            color: #142b22;
+        }
+
+        .ai-result h3 {
+            margin: 12px 0;
+            color: #142b22;
+        }
+
+        .result-image {
+            width: 100%;
+            max-height: 300px;
+            object-fit: contain;
+            border-radius: 10px;
+            margin: 12px 0;
+            background: #e9ece5;
+        }
+
+        .prediction-name {
+            font-family: Georgia, serif;
+            font-size: 25px;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+
+        .confidence-value {
+            font-size: 30px;
+            font-weight: bold;
+            color: #315d46;
+        }
+
+        .prediction-list {
+            margin-top: 18px;
+        }
+
+        .prediction-item {
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 11px 0;
+            border-bottom: 1px solid #d9dfd5;
+            font-size: 14px;
+        }
+
+        .result-label {
+            display: inline-block;
+            padding: 6px 12px;
+            border-radius: 20px;
+            background: #dce8dc;
+            color: #315d46;
+            font-size: 11px;
+            font-weight: bold;
+            letter-spacing: 1px;
+        }
+
+        .preview-container img {
+            max-width: 100%;
+            max-height: 260px;
+            object-fit: contain;
+        }
+
+        /* DETECTION HISTORY */
+        .history-list {
+            display: grid;
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .history-card {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            padding: 18px;
+            background: #f8f8f2;
+            border: 1px solid #d9dfd5;
+            border-radius: 10px;
+            color: #142b22;
+        }
+
+        .history-thumb {
+            width: 90px;
+            height: 90px;
+            object-fit: cover;
+            border-radius: 8px;
+            background: #e9ece5;
+            flex-shrink: 0;
+        }
+
+        .history-details {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .history-details h3 {
+            margin: 7px 0;
+            font-family: Georgia, serif;
+            font-size: 19px;
+            overflow-wrap: anywhere;
+        }
+
+        .history-details p {
+            margin: 5px 0;
+            font-size: 13px;
+            overflow-wrap: anywhere;
+        }
+
+        .history-confidence {
+            color: #315d46;
+            font-weight: bold;
+        }
+
+        .history-number {
+            color: #8b956f;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .history-actions {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 14px;
+            flex-wrap: wrap;
+            margin-top: 20px;
+        }
+
+        .history-count-note {
+            color: #68756a;
+            font-size: 13px;
+        }
+
+        .view-all-history {
+            display: inline-flex;
+            align-items: center;
+            gap: 9px;
+            padding: 11px 16px;
+            border: 1px solid #315d46;
+            border-radius: 7px;
+            color: #f8f8f2;
+            background: #315d46;
+            text-decoration: none;
+            font-size: 13px;
+            font-weight: 700;
+            transition: background .2s ease;
+        }
+
+        .view-all-history:hover { background: #244735; }
+
+        @media (max-width: 600px) {
+            .history-card {
+                gap: 12px;
+                padding: 12px;
+            }
+
+            .history-thumb {
+                width: 65px;
+                height: 65px;
+            }
+
+            .history-details h3 {
+                font-size: 16px;
+            }
+        }
+        /* MOVEMENT STATUS DASHBOARD */
+        .movement-overview {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 14px;
+            margin: 0 0 20px;
+        }
+
+        .movement-stat {
+            padding: 17px 18px;
+            border: 1px solid #d9dfd5;
+            border-radius: 11px;
+            background: #f8f8f2;
+            color: #142b22;
+        }
+
+        .movement-stat-label {
+            display: block;
+            color: #68756a;
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 1px;
+        }
+
+        .movement-stat-value {
+            display: block;
+            margin: 8px 0 4px;
+            color: #142b22;
+            font-family: Georgia, serif;
+            font-size: 29px;
+            font-weight: bold;
+        }
+
+        .movement-stat-note {
+            color: #68756a;
+            font-size: 11px;
+        }
+
+        .movement-progress {
+            height: 5px;
+            margin-top: 12px;
+            overflow: hidden;
+            border-radius: 10px;
+            background: #e3e7dd;
+        }
+
+        .movement-progress span {
+            display: block;
+            height: 100%;
+            border-radius: inherit;
+            background: #78916f;
+        }
+
+        .movement-stat.moving .movement-stat-value { color: #315d46; }
+        .movement-stat.resting .movement-stat-value { color: #9b8150; }
+        .movement-stat.active .movement-stat-value { color: #315d46; }
+
+        @media (max-width: 900px) {
+            .movement-overview { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        }
+
+        @media (max-width: 480px) {
+            .movement-overview { grid-template-columns: 1fr 1fr; gap: 9px; }
+            .movement-stat { padding: 13px; }
+            .movement-stat-value { font-size: 24px; }
+        }
+
+        /* SIMULATED GPS MAP */
+        .gps-demo-notice {
+            display: inline-flex;
+            align-items: center;
+            gap: 9px;
+            margin: 0 0 18px;
+            padding: 9px 13px;
+            border: 1px solid #d9dfd5;
+            border-radius: 30px;
+            background: #f8f8f2;
+            color: #526b57;
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 1px;
+        }
+
+        .gps-demo-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #c5a66a;
+        }
+
+        .gps-map-layout {
+            display: grid;
+            grid-template-columns: minmax(0, 1.5fr) minmax(280px, 1fr);
+            gap: 20px;
+            align-items: stretch;
+        }
+
+        .gps-map-panel, .gps-animal-panel {
+            min-width: 0;
+            padding: 22px;
+            border: 1px solid #d9dfd5;
+            border-radius: 12px;
+            background: #f8f8f2;
+            color: #142b22;
+        }
+
+        .gps-map-heading {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .gps-map-heading h3 {
+            margin: 6px 0 0;
+            font-family: Georgia, serif;
+            font-size: 21px;
+        }
+
+        .map-status, .animal-count {
+            padding: 6px 9px;
+            border-radius: 20px;
+            background: #e6eadf;
+            color: #315d46;
+            font-size: 10px;
+            font-weight: bold;
+            white-space: nowrap;
+        }
+
+        #wildlifeMap {
+            width: 100%;
+            height: 390px;
+            border-radius: 9px;
+            background: #e7e9df;
+            z-index: 1;
+        }
+
+        .map-footnote {
+            margin: 12px 0 0;
+            color: #68756a;
+            font-size: 11px;
+            line-height: 1.6;
+        }
+
+        .gps-animal-card {
+            display: flex;
+            align-items: center;
+            gap: 11px;
+            padding: 15px 0;
+            border-bottom: 1px solid #d9dfd5;
+        }
+
+        .gps-animal-card:last-child { border-bottom: 0; }
+
+        .animal-marker-icon {
+            display: grid;
+            place-items: center;
+            width: 38px;
+            height: 38px;
+            flex-shrink: 0;
+            border-radius: 50%;
+            background: #e4eadf;
+            color: #315d46;
+            font-size: 22px;
+        }
+
+        .gps-animal-details {
+            display: flex;
+            flex: 1;
+            flex-direction: column;
+            gap: 4px;
+            min-width: 0;
+        }
+
+        .gps-animal-details strong {
+            font-family: Georgia, serif;
+            font-size: 15px;
+        }
+
+        .gps-animal-details span, .gps-animal-details small,
+        .gps-animal-state small {
+            color: #68756a;
+            font-size: 10px;
+        }
+
+        .gps-animal-state {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 5px;
+        }
+
+        .animal-status {
+            color: #315d46;
+            font-size: 10px;
+            font-weight: bold;
+        }
+
+        .gps-empty { color: #68756a; font-size: 13px; }
+
+        @media (max-width: 900px) {
+            .gps-map-layout { grid-template-columns: 1fr; }
+        }
+
+        @media (max-width: 600px) {
+            #wildlifeMap { height: 300px; }
+            .gps-map-panel, .gps-animal-panel { padding: 15px; }
+        }
+
+        .account-button {
+            display: inline-block;
+            padding: 10px 15px;
+            border: 1px solid #315d46;
+            border-radius: 6px;
+            color: #315d46;
+            text-decoration: none;
+            font-size: 12px;
+            font-weight: 700;
+            transition: 0.2s ease;
+        }
+
+        .account-button:hover {
+            background: #315d46;
+            color: white;
+        }
+
+        .register-button {
+            background: #315d46;
+            color: white;
+        }
+
+        .member-name {
+            color: #315d46;
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+    </style>
+
+    <link rel="stylesheet"
+          href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+          integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+          crossorigin="">
+</head>
+
+<body>
+
+<div class="dashboard">
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+
+        <div class="brand">
+            <div class="brand-mark">W</div>
+            <div>
+                <h2>WILDLIFE<span>WATCH</span></h2>
+                <small>RESEARCH & MONITORING</small>
+            </div>
+        </div>
+
+        <div class="nav-label">WORKSPACE</div>
+
+        <nav class="navigation">
+            <a href="#overview" class="nav-link active">◈ <span>Overview</span></a>
+            <a href="#detection" class="nav-link">◎ <span>Animal Detection</span></a>
+            <a href="#history" class="nav-link">▤ <span>Detection History</span></a>
+            <a href="#gps" class="nav-link">⌖ <span>GPS Monitoring</span></a>
+        </nav>
+
+        <div class="sidebar-bottom">
+            <div class="status-indicator"></div>
+            <div>
+                <strong>System online</strong>
+                <small>Local Flask environment</small>
+            </div>
+        </div>
+
+    </aside>
+
+
+    <!-- MAIN CONTENT -->
+    <main class="main-content">
+
+        <div class="topbar">
+            <div>
+                <p class="eyebrow">WILDLIFE INTELLIGENCE PLATFORM</p>
+                <p class="breadcrumb">Workspace / Dashboard</p>
+            </div>
+
+            
+<div class="topbar-right">
+    <span class="prototype-tag">PROJECT PROTOTYPE</span>
+
+    {% if session.get('user_id') %}
+        <span class="member-name">
+            {{ session.get('name') }}
+            · {{ session.get('role')|title }}
+        </span>
+
+        <a href="{{ url_for('auth.logout') }}" class="account-button">
+            Logout
+        </a>
+    {% else %}
+        <a href="{{ url_for('auth.login') }}" class="account-button">
+            Login
+        </a>
+
+        <a href="{{ url_for('auth.register') }}" class="account-button register-button">
+            Join Wildlife Watch
+        </a>
+    {% endif %}
+</div>
+
+        </div>
+
+
+        <!-- OVERVIEW -->
+        <section class="hero" id="overview">
+
+            <div class="hero-content">
+                <p class="hero-kicker">CONSERVATION THROUGH TECHNOLOGY</p>
+
+                <h1>
+                    Understanding wildlife.<br>
+                    <em>Protecting tomorrow.</em>
+                </h1>
+
+                <p class="hero-description">
+                    An AI-based wildlife monitoring prototype designed
+                    to explore animal image identification, detection
+                    records and simulated location monitoring.
+                </p>
+
+                <a href="#detection" class="hero-button">
+                    Explore Detection <span>→</span>
+                </a>
+            </div>
+
+            <div class="hero-decoration">
+                <span class="hero-number">01</span>
+                <span class="hero-caption">OBSERVE · IDENTIFY · MONITOR</span>
+            </div>
+
+        </section>
+
+
+        <!-- SECTION HEADING -->
+        <section class="section-heading">
+            <div>
+                <p class="eyebrow">YOUR WORKSPACE</p>
+                <h2>Monitoring Overview</h2>
+            </div>
+
+            <p class="section-note">
+                A snapshot of the project environment
+            </p>
+        </section>
+
+
+        <!-- OVERVIEW PANELS -->
+        <section class="overview-grid">
+
+            <div class="metric-panel">
+                <div class="metric-top">
+                    <span class="metric-icon">◎</span>
+                    <span class="metric-label">IMAGE ANALYSIS</span>
+                </div>
+
+                {% if prediction %}
+                    <h3>Analysed</h3>
+                    <p>AI classification completed</p>
+                {% else %}
+                    <h3>Ready</h3>
+                    <p>Upload an image to begin</p>
+                {% endif %}
+            </div>
+
+
+            <div class="metric-panel">
+                <div class="metric-top">
+                    <span class="metric-icon">▤</span>
+                    <span class="metric-label">DETECTION RECORDS</span>
+                </div>
+
+                <h3>{{ history|length }}</h3>
+                <p>Saved detection records</p>
+            </div>
+
+
+            <div class="metric-panel">
+                <div class="metric-top">
+                    <span class="metric-icon">⌖</span>
+                    <span class="metric-label">LOCATION TRACKING</span>
+                </div>
+
+                <h3>Simulation</h3>
+                <p>GPS data will be simulated</p>
+            </div>
+
+        </section>
+
+
+        <!-- IMAGE DETECTION -->
+        <section class="workspace-section" id="detection">
+
+            <div class="section-heading">
+                <div>
+                    <p class="eyebrow">01 / IMAGE INTELLIGENCE</p>
+                    <h2>Animal Detection Workspace</h2>
+                </div>
+
+                <span class="section-index">01</span>
+            </div>
+
+
+            <div class="detection-layout">
+
+                <!-- UPLOAD PANEL -->
+                <div class="upload-panel">
+
+                    <div class="panel-heading">
+                        <span>IMAGE INPUT</span>
+                        <span class="live-dot">● READY</span>
+                    </div>
+                    {% if session.get('user_id') %}
+                    <form action="/" method="POST"
+                          enctype="multipart/form-data">
+
+                        <div class="upload-area" id="uploadArea">
+
+                            <div class="upload-symbol">↑</div>
+
+                            <h3>Bring wildlife into focus.</h3>
+                            <p>Drag and drop an image into this space</p>
+                            <p class="or-text">OR</p>
+
+                            <label for="animalImage"
+                                   class="browse-button">
+                                Browse Files
+                            </label>
+
+                            <input type="file"
+                                   id="animalImage"
+                                   name="animalImage"
+                                   accept="image/*"
+                                   required>
+
+                            <p class="file-info">
+                                JPG · JPEG · PNG · WEBP
+                            </p>
+
+                        </div>
+
+
+                        <div class="preview-container">
+
+                            {% if uploaded %}
+
+                                <img id="preview"
+                                     src="{{ url_for('uploaded_file', filename=uploaded) }}"
+                                     alt="Uploaded wildlife image"
+                                     style="display:block;">
+
+                                <p id="fileName">
+                                    Uploaded image: {{ uploaded }}
+                                </p>
+
+                            {% else %}
+
+                                <img id="preview"
+                                     alt="Selected wildlife image preview">
+
+                                <p id="fileName"></p>
+
+                            {% endif %}
+
+                        </div>
+
+
+                        <button type="submit" class="analyze-button">
+                            Analyse Wildlife Image <span>→</span>
+                        </button>
+
+                                        </form>
+
+                    {% else %}
+
+                    <div style="padding: 25px; text-align: center; background: #f8f8f2; border: 1px solid #d9dfd5; border-radius: 12px;">
+
+                        <h3>Become a Wildlife Watch Member</h3>
+
+                        <p>
+                            Join Wildlife Watch to upload animal images
+                            and use our AI-powered detection system.
+                        </p>
+
+                        <a href="{{ url_for('auth.login') }}" class="account-button">
+                            Login
+                        </a>
+
+                        <a href="{{ url_for('auth.register') }}" class="account-button register-button">
+                            Join Now
+                        </a>
+
+                    </div>
+
+                    {% endif %}
+
+                    </div>
+
+
+                <!-- AI RESULTS -->
+                <div class="information-panel">
+
+                    {% if prediction %}
+
+                        <p class="eyebrow">AI IMAGE ANALYSIS</p>
+                        <h3>Identification<br>Results</h3>
+
+                        <div class="ai-result">
+
+                            <span class="result-label">AI PREDICTION</span>
+
+                            <img
+                                class="result-image"
+                                src="{{ url_for('uploaded_file', filename=uploaded) }}"
+                                alt="Analysed wildlife image"
+                            >
+
+                            <p class="eyebrow">MOST LIKELY ANIMAL</p>
+
+                            <div class="prediction-name">
+                                {{ prediction }}
+                            </div>
+
+                            <p>Model confidence</p>
+
+                            <div class="confidence-value">
+                                {{ confidence }}%
+                            </div>
+
+                            <div class="info-divider"></div>
+
+                            <div class="prediction-list">
+                                <strong>Top 5 AI Predictions</strong>
+
+                                {% for item in predictions %}
+                                    <div class="prediction-item">
+                                        <span>{{ item.label }}</span>
+                                        <strong>
+                                            {{ "%.2f"|format(item.score * 100) }}%
+                                        </strong>
+                                    </div>
+                                {% endfor %}
+                            </div>
+
+                        </div>
+
+                        <div class="module-note">
+                            <span>✦</span>
+                            Predictions are generated using a pretrained
+                            ResNet-50 image classification model.
+                            Results may not always be accurate.
+                        </div>
+
+                    {% else %}
+
+                        <p class="eyebrow">ABOUT THIS MODULE</p>
+
+                        <h3>From observation<br>to identification.</h3>
+
+                        <p>
+                            Submit a wildlife photograph through the
+                            workspace. The AI model will analyse the
+                            image and provide its most likely
+                            classification.
+                        </p>
+
+                        <div class="info-divider"></div>
+
+                        <div class="info-row">
+                            <span>Input type</span>
+                            <strong>Wildlife image</strong>
+                        </div>
+
+                        <div class="info-row">
+                            <span>Processing</span>
+                            <strong>AI powered</strong>
+                        </div>
+
+                        <div class="info-row">
+                            <span>Classification</span>
+                            <strong>ResNet-50</strong>
+                        </div>
+
+                        <div class="module-note">
+                            <span>✦</span>
+                            Upload an image to see the AI-generated
+                            animal prediction and confidence score.
+                        </div>
+
+                    {% endif %}
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <!-- DETECTION HISTORY -->
+        <section class="workspace-section" id="history">
+
+            <div class="section-heading">
+                <div>
+                    <p class="eyebrow">02 / ACTIVITY LOG</p>
+                    <h2>Detection History</h2>
+                </div>
+
+                <span class="section-index">02</span>
+            </div>
+
+
+            {% if history %}
+
+                <div class="history-list">
+
+                    {% for record in history %}
+
+                        <div class="history-card">
+
+                            <img
+                                class="history-thumb"
+                                src="{{ url_for('uploaded_file', filename=record['image_filename']) }}"
+                                alt="Detected animal image"
+                            >
+
+                            <div class="history-details">
+
+                                <span class="history-number">
+                                    DETECTION #{{ record['id'] }}
+                                </span>
+
+                                <h3>
+                                    {{ record['predicted_species'] }}
+                                </h3>
+
+                                <p>
+                                    Confidence:
+                                    <span class="history-confidence">
+                                        {{ "%.2f"|format(record['confidence']) }}%
+                                    </span>
+                                </p>
+
+                                <p>
+                                    Date: {{ record['detected_at'] }}
+                                </p>
+
+                            </div>
+
+                        </div>
+
+                    {% endfor %}
+
+                </div>
+
+                <div class="history-actions">
+                    <span class="history-count-note">
+                        Showing {{ history|length }} of {{ total_history_count }} saved detections
+                    </span>
+                    <a class="view-all-history" href="{{ url_for('detection_history') }}">
+                        View All History <span>→</span>
+                    </a>
+                </div>
+
+            {% else %}
+
+                <div class="empty-panel">
+
+                    <div class="empty-symbol">▤</div>
+
+                    <h3>No detection records yet</h3>
+
+                    <p>
+                        Upload and analyse your first wildlife image.
+                        Your saved detections will appear here.
+                    </p>
+
+                </div>
+
+            {% endif %}
+
+        </section>
+
+
+        <!-- GPS MONITORING -->
+        <section class="workspace-section" id="gps">
+
+            <div class="section-heading">
+                <div>
+                    <p class="eyebrow">03 / LOCATION INTELLIGENCE</p>
+                    <h2>GPS Monitoring</h2>
+                </div>
+                <span class="section-index">03</span>
+            </div>
+
+            <div class="gps-demo-notice">
+                <span class="gps-demo-dot"></span>
+                SIMULATED DEMO DATA · NOT LIVE GPS TRACKING
+            </div>
+
+            {% set movement_stats = namespace(moving=0, resting=0, active=0) %}
+            {% for animal in gps_locations %}
+                {% if animal.movement|lower == 'moving' %}
+                    {% set movement_stats.moving = movement_stats.moving + 1 %}
+                {% elif animal.movement|lower == 'resting' %}
+                    {% set movement_stats.resting = movement_stats.resting + 1 %}
+                {% endif %}
+                {% if animal.status|lower == 'active' %}
+                    {% set movement_stats.active = movement_stats.active + 1 %}
+                {% endif %}
+            {% endfor %}
+            {% set total_animals = gps_locations|length %}
+            {% set moving_percent = (movement_stats.moving / total_animals * 100) if total_animals else 0 %}
+            {% set resting_percent = (movement_stats.resting / total_animals * 100) if total_animals else 0 %}
+            {% set active_percent = (movement_stats.active / total_animals * 100) if total_animals else 0 %}
+
+            <div class="movement-overview">
+                <div class="movement-stat">
+                    <span class="movement-stat-label">TRACKED ANIMALS</span>
+                    <strong class="movement-stat-value">{{ total_animals }}</strong>
+                    <span class="movement-stat-note">Simulated animal records</span>
+                    <div class="movement-progress"><span style="width: 100%;"></span></div>
+                </div>
+
+                <div class="movement-stat moving">
+                    <span class="movement-stat-label">CURRENTLY MOVING</span>
+                    <strong class="movement-stat-value">{{ movement_stats.moving }}</strong>
+                    <span class="movement-stat-note">{{ "%.0f"|format(moving_percent) }}% of tracked animals</span>
+                    <div class="movement-progress"><span style="width: {{ moving_percent }}%;"></span></div>
+                </div>
+
+                <div class="movement-stat resting">
+                    <span class="movement-stat-label">CURRENTLY RESTING</span>
+                    <strong class="movement-stat-value">{{ movement_stats.resting }}</strong>
+                    <span class="movement-stat-note">{{ "%.0f"|format(resting_percent) }}% of tracked animals</span>
+                    <div class="movement-progress"><span style="width: {{ resting_percent }}%;"></span></div>
+                </div>
+
+                <div class="movement-stat active">
+                    <span class="movement-stat-label">ACTIVE RECORDS</span>
+                    <strong class="movement-stat-value">{{ movement_stats.active }}</strong>
+                    <span class="movement-stat-note">{{ "%.0f"|format(active_percent) }}% of tracked animals</span>
+                    <div class="movement-progress"><span style="width: {{ active_percent }}%;"></span></div>
+                </div>
+            </div>
+
+            <div class="gps-map-layout">
+                <div class="gps-map-panel">
+                    <div class="gps-map-heading">
+                        <div>
+                            <span class="metric-label">ANIMAL LOCATION VIEW</span>
+                            <h3>Wildlife Movement Map</h3>
+                        </div>
+                        <span class="map-status">DEMO MAP</span>
+                    </div>
+                    <div id="wildlifeMap" aria-label="Map showing simulated animal locations"></div>
+                    <p class="map-footnote">
+                        The markers use fictional coordinates for project demonstration.
+                        Map tiles require an internet connection.
+                    </p>
+                </div>
+
+                <div class="gps-animal-panel">
+                    <div class="gps-map-heading">
+                        <div>
+                            <span class="metric-label">MONITORING REGISTER</span>
+                            <h3>Tracked Animals</h3>
+                        </div>
+                        <span class="animal-count">{{ gps_locations|length }}</span>
+                    </div>
+
+                    {% for animal in gps_locations %}
+                        <div class="gps-animal-card">
+                            <div class="animal-marker-icon">⌖</div>
+                            <div class="gps-animal-details">
+                                <strong>{{ animal.species }}</strong>
+                                <span>{{ animal.animal_id }}</span>
+                                <small>
+                                    {{ "%.4f"|format(animal.latitude) }},
+                                    {{ "%.4f"|format(animal.longitude) }}
+                                </small>
+                            </div>
+                            <div class="gps-animal-state">
+                                <span class="animal-status">{{ animal.status }}</span>
+                                <small>{{ animal.movement }}</small>
+                            </div>
+                        </div>
+                    {% else %}
+                        <p class="gps-empty">No simulated animal records available.</p>
+                    {% endfor %}
+                </div>
+            </div>
+
+        </section>
+
+
+        <!-- FOOTER -->
+        <footer>
+            <span>WILDLIFE WATCH</span>
+
+            <span>
+                AI-BASED WILDLIFE MONITORING SYSTEM · FINAL YEAR PROJECT
+            </span>
+        </footer>
+
+    </main>
+
+</div>
+
+
+<!-- IMAGE PREVIEW SCRIPT -->
+<script>
+
+const imageInput = document.getElementById("animalImage");
+const preview = document.getElementById("preview");
+const fileName = document.getElementById("fileName");
+const uploadArea = document.getElementById("uploadArea");
+
+
+function showPreview(file) {
+
+    if (!file || !file.type.startsWith("image/")) {
+        alert("Please select a valid image.");
+        return;
+    }
+
+    const reader = new FileReader();
+
+    reader.onload = function(event) {
+        preview.src = event.target.result;
+        preview.style.display = "block";
+        fileName.textContent = file.name;
+    };
+
+    reader.readAsDataURL(file);
+}
+
+
+imageInput.addEventListener("change", function() {
+    showPreview(this.files[0]);
+});
+
+
+uploadArea.addEventListener("dragover", function(event) {
+    event.preventDefault();
+    uploadArea.classList.add("drag-active");
+});
+
+
+uploadArea.addEventListener("dragleave", function() {
+    uploadArea.classList.remove("drag-active");
+});
+
+
+uploadArea.addEventListener("drop", function(event) {
+    event.preventDefault();
+    uploadArea.classList.remove("drag-active");
+
+    const file = event.dataTransfer.files[0];
+
+    if (file) {
+        imageInput.files = event.dataTransfer.files;
+        showPreview(file);
+    }
+});
+
+</script>
+
+<!-- LEAFLET MAP LIBRARY -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+        crossorigin=""></script>
+
+<!-- SIMULATED GPS MAP -->
+<script>
+const simulatedAnimals = {{ gps_locations|tojson }};
+
+const mapElement = document.getElementById("wildlifeMap");
+
+if (mapElement && typeof L !== "undefined" && simulatedAnimals.length > 0) {
+    const wildlifeMap = L.map("wildlifeMap");
+
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+        maxZoom: 19
+    }).addTo(wildlifeMap);
+
+    const animalBounds = [];
+
+    simulatedAnimals.forEach(function(animal) {
+        const position = [animal.latitude, animal.longitude];
+        animalBounds.push(position);
+
+        L.marker(position)
+            .addTo(wildlifeMap)
+            .bindPopup(
+                "<strong>" + animal.species + "</strong><br>" +
+                "ID: " + animal.animal_id + "<br>" +
+                "Movement: " + animal.movement + "<br>" +
+                "Status: " + animal.status + "<br>" +
+                "<em>Simulated location</em>"
+            );
+    });
+
+    wildlifeMap.fitBounds(animalBounds, { padding: [35, 35], maxZoom: 15 });
+} else if (mapElement) {
+    mapElement.innerHTML =
+        "<p style='padding:20px;color:#526b57'>Map library or simulated location data is unavailable. Check your internet connection and app.py.</p>";
+}
+</script>
+
+</body>
+</html>

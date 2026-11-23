@@ -1,0 +1,45 @@
+
+# ==========================================
+# WILDLIFE MONITORING SYSTEM
+# Git ignore configuration
+# ==========================================
+
+# Python virtual environments
+venv/
+.venv/
+env/
+
+# Python cache files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Secret keys and environment variables
+.flask_secret_key
+.env
+.env.*
+!.env.example
+
+# Local databases (do not upload personal data)
+*.db
+*.sqlite
+*.sqlite3
+
+# Uploaded images and user files
+uploads/*
+!uploads/.gitkeep
+
+# Logs
+*.log
+
+# IDE and editor files
+.vscode/
+.idea/
+
+# Operating system files
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.bak
